@@ -1,0 +1,13 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+import {generatePrivateKey,privateKeyToAccount} from 'viem/accounts';
+const load=p=>readFileSync(p,'utf8');
+const get=(s,n)=>s.match(new RegExp('^'+n+'=(.*)$','m'))?.[1]?.trim();
+const set=(s,n,v)=>new RegExp('^'+n+'=.*$','m').test(s)?s.replace(new RegExp('^'+n+'=.*$','m'),n+'='+v):s+'\n'+n+'='+v+'\n';
+const cp='contracts/.env',bp='backend/.env';let c=load(cp),b=load(bp);
+const deployerKey=get(c,'DEPLOYER_PRIVATE_KEY')||generatePrivateKey();
+const relayerKey=get(b,'RELAYER_PRIVATE_KEY')||generatePrivateKey();
+const deployer=privateKeyToAccount(deployerKey),relayer=privateKeyToAccount(relayerKey);
+c=set(set(c,'DEPLOYER_PRIVATE_KEY',deployerKey),'RELAYER_ADDRESS',relayer.address);
+b=set(b,'RELAYER_PRIVATE_KEY',relayerKey);
+writeFileSync(cp,c);writeFileSync(bp,b);
+console.log(JSON.stringify({deployer:deployer.address,relayer:relayer.address,keysSaved:'ignored local .env files; never logged'},null,2));

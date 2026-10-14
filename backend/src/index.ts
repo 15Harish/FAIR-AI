@@ -1,0 +1,18 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import {rateLimit} from 'express-rate-limit';
+import {authRouter} from './routes/auth.js';
+import {api} from './routes/api.js';
+import {startSweeper} from './sweeper.js';
+export const app=express();
+app.disable('x-powered-by');
+if(process.env.TRUST_PROXY)app.set('trust proxy',Number(process.env.TRUST_PROXY));
+app.use(cors({origin:process.env.FRONTEND_ORIGIN||'http://localhost:3000'}));
+app.use(express.json({limit:'64kb',type:['application/json','text/plain']}));
+app.use('/api',rateLimit({windowMs:60000,limit:100,standardHeaders:true,legacyHeaders:false,message:{error:'RATE_LIMITED',message:'Please wait a moment and retry.'}}));
+app.use('/api/auth',authRouter);app.use('/api',api);
+app.use((error:Error&{status?:number;code?:string},_req:express.Request,res:express.Response,_next:express.NextFunction)=>{if(res.headersSent)return res.end();const status=error.status||500;if(status===500)console.error('Request failed:',error.name);res.status(status).json({error:error.code||'SERVICE_UNAVAILABLE',message:status===500?'The service is unavailable. Please retry.':error.message});});
+const timer=startSweeper();
+const server=app.listen(Number(process.env.PORT||3001),()=>console.info('FairAI API ready'));
+function stop(){clearInterval(timer);server.close(()=>process.exit(0));}process.on('SIGTERM',stop);process.on('SIGINT',stop);

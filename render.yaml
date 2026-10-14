@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: fairai-api
+    runtime: node
+    rootDir: .
+    buildCommand: npm ci --prefix backend && npm --prefix backend run build
+    startCommand: npm --prefix backend start
+    healthCheckPath: /api/health
+    disk:
+      name: fairai-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: SQLITE_PATH
+        value: /var/data/fairai.sqlite
+      - key: MONAD_RPC
+        sync: false
+      - key: RELAYER_PRIVATE_KEY
+        sync: false
+      - key: QWEN_API_KEY
+        sync: false
+      - key: FRONTEND_ORIGIN
+        sync: false
